@@ -124,8 +124,8 @@ TLS 在 WebView2 内部就结束了，递到宿主手上的是明文。所以它
 
 | 版本 | 压缩包大小 | 先决条件 | 适合谁 |
 | --- | --- | --- | --- |
-| `wvresp-1.0-win-x64-lite.zip` | 约 0.4 MB | 需要 .NET Core 3.1 **Desktop** Runtime | 想要小体积、机器上已有运行时 |
-| `wvresp-1.0-win-x64.zip` | 约 64 MB | 无需安装任何运行时 | 双击即用，换来一个大包 |
+| `wvresp-1.0-win-x64-lite.zip` | 约 0.4 MB | 需要 .NET 8 **Desktop** Runtime | 想要小体积、机器上已有运行时 |
+| `wvresp-1.0-win-x64.zip` | 约 65 MB | 无需安装任何运行时 | 双击即用，换来一个大包 |
 
 两个版本都必须有 **WebView2 运行时**：Windows 10/11 装了 Edge 就自带；没有的话装 Evergreen Bootstrapper 即可。
 
@@ -137,10 +137,10 @@ TLS 在 WebView2 内部就结束了，递到宿主手上的是明文。所以它
 git clone <repo-url> wvresp
 cd wvresp
 .\build.ps1
-# 产物：src\bin\Release\netcoreapp3.1\wvresp.exe  (158 KB)
+# 产物：src\bin\Release\net8.0-windows\wvresp.exe  (148 KB)
 ```
 
-依赖：.NET Core SDK 3.1（已验证 3.1.426）、NuGet `Microsoft.Web.WebView2 1.0.1774.30`、本机 WebView2 运行时（Evergreen，已验证 157.0.4341.46）。
+依赖：.NET SDK 8.0（已验证 8.0.428）、NuGet `Microsoft.Web.WebView2 1.0.1774.30`、本机 WebView2 运行时（Evergreen，已验证 157.0.4341.46）。
 
 ## 快速开始
 

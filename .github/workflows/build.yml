@@ -16,12 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET SDK 3.1
+      - name: Set up .NET SDK 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "3.1.x"
+          dotnet-version: "8.0.x"
 
-      # 轻量版：不打包运行时，压缩后约 0.4 MB，使用者需自备 .NET Core 3.1 Desktop Runtime
+      # 轻量版：不打包运行时，压缩后不到 1 MB，使用者需自备 .NET 8 Desktop Runtime
       - name: Publish lite (framework-dependent)
         run: >
           dotnet publish src/wvresp.csproj -c Release -r win-x64 --self-contained false

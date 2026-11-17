@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $proj = Join-Path $root 'src\wvresp.csproj'
-$exe  = Join-Path $root 'src\bin\Release\netcoreapp3.1\wvresp.exe'
+$exe  = Join-Path $root 'src\bin\Release\net8.0-windows\wvresp.exe'
 
 Push-Location $root
 try {
