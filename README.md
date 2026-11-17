@@ -155,9 +155,23 @@ wvresp --hidden -u https://example.com/page -Y "ctype=json status>=200" -e i,sta
 wvresp --hidden -u https://example.com/page --stop-kept 5 --export-objects http,obj -q -z
 ```
 
-实际跑一次是这样（示例站 `example.com`，6 秒后自动停；文字为真实运行输出）：
+全部参数（`--help` 的真实输出）：
 
-![wvresp 运行输出](docs/run.png)
+![wvresp 参数](docs/run.png)
+
+实际跑一次是这样（示例站 `example.com`，`-a duration:8` 八秒后自动停，未加 `--hidden`；图中命令行为真实命令回显，下面为原样输出）：
+
+![wvresp 运行输出](docs/run-example.png)
+
+一次抓取的产物落在 `-w` 指定的目录里：
+
+```
+cap1\
+  capture.jsonl                     每个响应一行（未保存的也记，带 reason）
+  wvresp.log                        导航与统计
+  bodies\0001_example.com.dat       577 B  主页正文
+  bodies\0002_example.com_s.js.js   1963 B 页面自己请求的脚本
+```
 
 完整参数与输出格式见 [`docs/USAGE.md`](docs/USAGE.md)；"某个程序能不能抓、怎么判断"见 [`docs/TARGET.md`](docs/TARGET.md)；设计取舍见 [`docs/DESIGN.md`](docs/DESIGN.md)。
 

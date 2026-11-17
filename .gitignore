@@ -5,6 +5,7 @@ src/obj/
 # local captures / profiles (never commit captured data)
 kpcap-*/
 cap-*/
+cap*/
 obj/
 *-profile/
 *.user
