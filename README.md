@@ -144,6 +144,10 @@ wvresp --hidden -u https://example.com/page -Y "ctype=json status>=200" -e i,sta
 wvresp --hidden -u https://example.com/page --stop-kept 5 --export-objects http,obj -q -z
 ```
 
+实际跑一次是这样（示例站 `example.com`，6 秒后自动停；文字为真实运行输出）：
+
+![wvresp 运行输出](docs/run.png)
+
 完整参数与输出格式见 [`docs/USAGE.md`](docs/USAGE.md)；"某个程序能不能抓、怎么判断"见 [`docs/TARGET.md`](docs/TARGET.md)；设计取舍见 [`docs/DESIGN.md`](docs/DESIGN.md)。
 
 ## 已知限制
