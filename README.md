@@ -157,11 +157,11 @@ wvresp --hidden -u https://example.com/page --stop-kept 5 --export-objects http,
 
 全部参数（`--help` 的真实输出）：
 
-![wvresp 参数](docs/run.png)
+![wvresp 参数](docs/help.png)
 
 实际跑一次是这样（示例站 `example.com`，`-a duration:8` 八秒后自动停，未加 `--hidden`；图中命令行为真实命令回显，下面为原样输出）：
 
-![wvresp 运行输出](docs/run-example.png)
+![wvresp 运行输出](docs/example.png)
 
 一次抓取的产物落在 `-w` 指定的目录里：
 
