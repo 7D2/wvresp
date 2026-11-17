@@ -124,8 +124,8 @@ TLS 在 WebView2 内部就结束了，递到宿主手上的是明文。所以它
 
 | 版本 | 压缩包大小 | 先决条件 | 适合谁 |
 | --- | --- | --- | --- |
-| `wvresp-1.0-win-x64-lite.zip` | 约 0.4 MB | 需要 .NET 8 **Desktop** Runtime | 想要小体积、机器上已有运行时 |
-| `wvresp-1.0-win-x64.zip` | 约 65 MB | 无需安装任何运行时 | 双击即用，换来一个大包 |
+| `wvresp-v1.0.0-win-x64-lite.zip` | 约 0.4 MB | 需要 .NET 8 **Desktop** Runtime | 想要小体积、机器上已有运行时 |
+| `wvresp-v1.0.0-win-x64.zip` | 约 65 MB | 无需安装任何运行时 | 双击即用，换来一个大包 |
 
 两个版本都必须有 **WebView2 运行时**：Windows 10/11 装了 Edge 就自带；没有的话装 Evergreen Bootstrapper 即可。
 
