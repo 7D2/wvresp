@@ -40,16 +40,36 @@ jobs:
           Compress-Archive -Path (Get-ChildItem dist-lite | ForEach-Object FullName) -DestinationPath wvresp-${{ github.ref_name }}-win-x64-lite.zip
           Compress-Archive -Path "dist-full/wvresp.exe" -DestinationPath wvresp-${{ github.ref_name }}-win-x64.zip
           Get-ChildItem *.zip | ForEach-Object { "{0} {1} bytes" -f $_.Name, $_.Length }
+          Get-ChildItem *.zip | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content -LiteralPath SHA256SUMS.txt -Encoding utf8
+          Get-Content -LiteralPath SHA256SUMS.txt
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wvresp-windows
-          path: "*.zip"
+          path: |
+            *.zip
+            SHA256SUMS.txt
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: "*.zip"
-          generate_release_notes: true
+          name: wvresp ${{ github.ref_name }}
+          body: |
+            两个版本，按你的机器挑一个：
+
+            | 包 | 大小 | 先决条件 |
+            |---|---|---|
+            | `wvresp-${{ github.ref_name }}-win-x64-lite.zip` | 约 0.4 MB | 需自备 .NET 8 Desktop Runtime |
+            | `wvresp-${{ github.ref_name }}-win-x64.zip` | 约 65 MB | 什么都不用装，双击即用 |
+
+            两者都还需要本机有 WebView2 运行时（Windows 10/11 装了 Edge 就自带）。
+            `SHA256SUMS.txt` 是上面两个包的校验值。
+
+            它抓的是**你自己这次发起的请求**经 WebView2 拿到的明文响应；不注入、不提权、不装证书、不读凭据、不抓别人的流量。
+          files: |
+            *.zip
+            SHA256SUMS.txt
