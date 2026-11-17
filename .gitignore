@@ -1,0 +1,15 @@
+# build output
+src/bin/
+src/obj/
+
+# local captures / profiles (never commit captured data)
+kpcap-*/
+cap-*/
+obj/
+*-profile/
+*.user
+
+# editor / OS noise
+.vs/
+.idea/
+Thumbs.db
