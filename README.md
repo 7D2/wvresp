@@ -120,6 +120,17 @@ TLS 在 WebView2 内部就结束了，递到宿主手上的是明文。所以它
 
 ---
 
+## 下载（不想自己编译）
+
+| 版本 | 压缩包大小 | 先决条件 | 适合谁 |
+| --- | --- | --- | --- |
+| `wvresp-1.0-win-x64-lite.zip` | 约 0.4 MB | 需要 .NET Core 3.1 **Desktop** Runtime | 想要小体积、机器上已有运行时 |
+| `wvresp-1.0-win-x64.zip` | 约 64 MB | 无需安装任何运行时 | 双击即用，换来一个大包 |
+
+两个版本都必须有 **WebView2 运行时**：Windows 10/11 装了 Edge 就自带；没有的话装 Evergreen Bootstrapper 即可。
+
+发布包在 [Releases](../../releases) 里下载。不想等发布、只想要某次提交的编译结果，去 Actions 页面下载对应构建的 artifact——仓库里不放二进制，全部由 CI 编译。
+
 ## 构建
 
 ```powershell
