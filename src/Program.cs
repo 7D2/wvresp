@@ -1,4 +1,4 @@
-// kpcap - WebView2 会话抓取工具（tshark/pktmon 参数风格的子集）
+// wvresp - WebView2 会话抓取工具（tshark/pktmon 参数风格的子集）
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -14,7 +14,7 @@ using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
-namespace kpcap
+namespace wvresp
 {
     sealed class Opt
     {
@@ -97,8 +97,8 @@ namespace kpcap
                             switch (k.ToLowerInvariant())
                             {
                                 case "http.user_agent": o.UserAgent = x; break;
-                                case "kp.user_data": o.UserData = x; break;
-                                case "kp.max_save": o.MaxSave = long.Parse(x, CultureInfo.InvariantCulture); break;
+                                case "wvresp.user_data": o.UserData = x; break;
+                                case "wvresp.max_save": o.MaxSave = long.Parse(x, CultureInfo.InvariantCulture); break;
                                 default: throw new Exception("unknown -o key: " + k);
                             }
                             break;
@@ -147,7 +147,7 @@ namespace kpcap
         readonly List<Rec> recs = new List<Rec>();
         StreamWriter man, log;
         int respCount, keptCount, bodyErr;
-        long bytesSaved, bytesSeen;
+        long bytesSaved;
         readonly Dictionary<string, int> hostCount = new Dictionary<string, int>();
         readonly Dictionary<string, long> hostBytes = new Dictionary<string, long>();
         readonly Dictionary<string, int> ctypeCount = new Dictionary<string, int>();
@@ -161,13 +161,13 @@ namespace kpcap
         public CapForm(Opt opt)
         {
             o = opt;
-            outDir = o.OutDir ?? Path.Combine(Directory.GetCurrentDirectory(), "kpcap-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            outDir = o.OutDir ?? Path.Combine(Directory.GetCurrentDirectory(), "wvresp-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
             Directory.CreateDirectory(outDir);
             bodyDir = Path.Combine(outDir, "bodies");
             Directory.CreateDirectory(bodyDir);
             man = new StreamWriter(Path.Combine(outDir, o.Manifest), false, new UTF8Encoding(false)) { AutoFlush = true };
-            log = new StreamWriter(Path.Combine(outDir, "kpcap.log"), false, new UTF8Encoding(false)) { AutoFlush = true };
-            Text = "kpcap";
+            log = new StreamWriter(Path.Combine(outDir, "wvresp.log"), false, new UTF8Encoding(false)) { AutoFlush = true };
+            Text = "wvresp";
             Width = 1000; Height = 700;
             StartPosition = FormStartPosition.CenterScreen;
             if (o.Hidden) { ShowInTaskbar = false; Opacity = 0; WindowState = FormWindowState.Minimized; }
@@ -184,7 +184,7 @@ namespace kpcap
 
         async Task InitAsync()
         {
-            string ud = o.UserData ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kpcap", "webdata");
+            string ud = o.UserData ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "wvresp", "webdata");
             Directory.CreateDirectory(ud);
             var env = await CoreWebView2Environment.CreateAsync(null, ud, null);
             await wv.EnsureCoreWebView2Async(env);
@@ -192,7 +192,7 @@ namespace kpcap
             if (o.UserAgent != null) st.UserAgent = o.UserAgent;
             st.AreDevToolsEnabled = false;
             st.IsStatusBarEnabled = false;
-            Say("kpcap start version=" + typeof(CoreWebView2).Assembly.GetName().Version + " core=" + wv.CoreWebView2.Environment.GetType().Name);
+            Say("wvresp start version=" + typeof(CoreWebView2).Assembly.GetName().Version + " core=" + wv.CoreWebView2.Environment.GetType().Name);
             Say("out=" + outDir);
             wv.CoreWebView2.WebResourceResponseReceived += OnResponse;
             wv.CoreWebView2.NavigationCompleted += (s, e) =>
@@ -326,7 +326,6 @@ namespace kpcap
             string host = "";
             try { host = new Uri(url).Host; } catch { }
             int n = Interlocked.Increment(ref respCount);
-            Interlocked.Add(ref bytesSeen, 0);
             lock (gate)
             {
                 if (!hostCount.ContainsKey(host)) hostCount[host] = 0;
@@ -452,7 +451,6 @@ namespace kpcap
                 foreach (var kv in ctypeCount.OrderByDescending(k => k.Value).Take(15))
                     Say(string.Format("{0,6}  {1}", kv.Value, kv.Key));
             }
-            var kept = recs.Count(x => x.Kept);
             if (o.Fields.Count > 0)
             {
                 foreach (var r in recs.Where(x => x.Kept))
@@ -473,21 +471,21 @@ namespace kpcap
     {
         static void Usage()
         {
-            Console.WriteLine(@"kpcap 1.0 - WebView2 session capture (tshark/pktmon style)
+            Console.WriteLine(@"wvresp 1.0 - WebView2 response capture (tshark/pktmon style)
 
 USAGE
-  kpcap --url <URL> [--url <URL> ...] [options]
+  wvresp --url <URL> [--url <URL> ...] [options]
 
 CAPTURE
   -i, --iface <webview2|any>   capture surface (only its own WebView2 session)
   --url, -u <URL>              start URL (repeatable, navigated in order)
-  -w, --out <dir>              output dir (default .\kpcap-YYYYmmdd-HHmmss)
+  -w, --out <dir>              output dir (default .\wvresp-YYYYmmdd-HHmmss)
   -a duration:<sec>            autostop after N seconds
   -c <n>                       autostop after N responses (tshark -c: before filters)
   --stop-kept <n>              autostop after N bodies actually kept
   -o http.user_agent=<s>       override User-Agent
-  -o kp.user_data=<dir>        WebView2 user data dir (keeps cookies/session)
-  -o kp.max_save=<bytes>       max body size saved per response (default 8 MiB)
+  -o wvresp.user_data=<dir>        WebView2 user data dir (keeps cookies/session)
+  -o wvresp.max_save=<bytes>       max body size saved per response (default 8 MiB)
   --hidden                     run minimized/invisible
 
 FILTER
@@ -522,7 +520,7 @@ EXIT
                 if (!Cli.Parse(args, o, out err)) { Console.Error.WriteLine("ERR " + err); Usage(); return 2; }
             }
             catch (UsageException) { Usage(); return 0; }
-            catch (VersionException) { Console.WriteLine("kpcap 1.0 (netcoreapp3.1 + Microsoft.Web.WebView2)"); return 0; }
+            catch (VersionException) { Console.WriteLine("wvresp 1.0 (netcoreapp3.1 + Microsoft.Web.WebView2)"); return 0; }
             catch (Exception ex) { Console.Error.WriteLine("ERR " + ex.Message); Usage(); return 2; }
 
             Application.EnableVisualStyles();

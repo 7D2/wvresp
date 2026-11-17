@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 <#
-  kpcap build script
+  wvresp build script
   用法：  .\build.ps1            构建 Release
           .\build.ps1 -Clean     先清 bin/obj 再构建
           .\build.ps1 -Run "https://example.com/"   构建后直接跑一次
@@ -12,8 +12,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$proj = Join-Path $root 'src\kpcap.csproj'
-$exe  = Join-Path $root 'src\bin\Release\netcoreapp3.1\kpcap.exe'
+$proj = Join-Path $root 'src\wvresp.csproj'
+$exe  = Join-Path $root 'src\bin\Release\netcoreapp3.1\wvresp.exe'
 
 Push-Location $root
 try {

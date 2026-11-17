@@ -1,9 +1,9 @@
 # 参数与输出
 
-`kpcap 1.0`。命令行风格对齐 `tshark` / `pktmon`，参数名尽量复用它们的心智，方便直接上手。
+`wvresp 1.0`。命令行风格对齐 `tshark` / `pktmon`，参数名尽量复用它们的心智，方便直接上手。
 
 ```text
-kpcap --url <URL> [--url <URL> ...] [options]
+wvresp --url <URL> [--url <URL> ...] [options]
 ```
 
 ## 采集
@@ -11,17 +11,17 @@ kpcap --url <URL> [--url <URL> ...] [options]
 | 参数 | 对应 tshark / pktmon | 说明 |
 | --- | --- | --- |
 | `-u, --url <URL>` | tshark 输入是 `-r <pcap>` | 本工具的输入是 URL。可重复，按出现顺序导航，每次导航之间停 800 ms |
-| `-w, --out <dir>` | `-w <file>` / pktmon `--file <etl>` | 输出目录，默认 `.\kpcap-YYYYmmdd-HHmmss` |
+| `-w, --out <dir>` | `-w <file>` / pktmon `--file <etl>` | 输出目录，默认 `.\wvresp-YYYYmmdd-HHmmss` |
 | `-a duration:<sec>` | `-a duration:N` | 到时自动停。也接受 `time:` 前缀、数字后带 `s` |
 | `-c <n>` | `-c <n>` | 收够 N 个响应就停。**N 是过滤前的响应计数**（与 tshark 的 `-c` 同义）；用 `-c` 做「收够 N 个 body」会提前停 |
 | `--stop-kept <n>` | 无 | 收够 N 个**真正落盘**的 body 才停（tshark 没有这个，但本工具需要） |
 | `-i, --iface <webview2\|any>` | `-i <iface>` / pktmon `list` | 采集面。只接受 `webview2` / `any`，其他值直接报错并退出 2 |
 | `-o http.user_agent=<s>` | `-o <pref>=<val>` | 覆盖 User-Agent |
-| `-o kp.user_data=<dir>` | 无 | WebView2 用户数据目录。指到已有目录即可复用 cookie / 登录态 |
-| `-o kp.max_save=<bytes>` | 无 | 单个 body 落盘上限，默认 8 MiB |
+| `-o wvresp.user_data=<dir>` | 无 | WebView2 用户数据目录。指到已有目录即可复用 cookie / 登录态 |
+| `-o wvresp.max_save=<bytes>` | 无 | 单个 body 落盘上限，默认 8 MiB |
 | `--hidden` | 无 | 窗口不可见运行（`ShowInTaskbar=false`、最小化、不占焦点），适合脚本 |
 
-默认 user data 目录：`%LOCALAPPDATA%\kpcap\webdata`。不指定时不会污染浏览器配置。
+默认 user data 目录：`%LOCALAPPDATA%\wvresp\webdata`。不指定时不会污染浏览器配置。
 
 ## 过滤
 
@@ -55,8 +55,8 @@ kpcap --url <URL> [--url <URL> ...] [options]
 示例：
 
 ```powershell
-kpcap -u https://www.doubao.com/chat/ -Y "ctype=json status>=200"
-kpcap -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
+wvresp -u https://www.doubao.com/chat/ -Y "ctype=json status>=200"
+wvresp -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
 ```
 
 ## 输出
@@ -69,9 +69,9 @@ kpcap -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
 | `-T fields` | 结束时对**已落盘**的响应输出制表符分隔的字段；字段由 `-e` 指定 |
 | `-e <f[,f]>` | 指定字段；用了 `-e` 会自动把默认的 `table` 切成 `fields` |
 | `--manifest <name>` | `<out>` 下的清单文件名，默认 `capture.jsonl` |
-| `--export-objects http,<dir>` | 每个 body 都落盘到 `<dir>`（相对路径按 `<out>` 解析），忽略 `kp.max_save` |
+| `--export-objects http,<dir>` | 每个 body 都落盘到 `<dir>`（相对路径按 `<out>` 解析），忽略 `wvresp.max_save` |
 | `-z` | 结束时打印 host（按次数倒序前 25，带已存字节数）与 content-type（前 15）统计块 |
-| `-q` | 静默：只在 `kpcap.log` 写，不往控制台打 |
+| `-q` | 静默：只在 `wvresp.log` 写，不往控制台打 |
 | `-V` | 逐条打印每个响应（含被过滤掉的） |
 
 ### `-e` 可用字段
@@ -99,7 +99,7 @@ kpcap -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
 <out>/
   bodies/            0001_<host>_<basename>.<ext>
   capture.jsonl      每响应一行 JSON
-  kpcap.log          nav ok=/err=、BODY-ERR、hosts 与 content-types 统计
+  wvresp.log          nav ok=/err=、BODY-ERR、hosts 与 content-types 统计
 ```
 
 `bodies/` 文件名 = `序号:D4` + `_` + `host_路径基名`（非法字符替换为 `_`、截断 60 字）+ 按 Content-Type 推的扩展名（json / html / css / js / svg / png / jpg / gif / webp / pdf / txt / bin / dat）。
@@ -119,7 +119,7 @@ kpcap -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
 | `filter` | 被 `-Y` 挡掉 |
 | `status` | 被 `-Y status…` 挡掉 |
 | `size` | 被 `--min-bytes` / `--max-bytes` 挡掉 |
-| `toobig` | 超过 `kp.max_save` |
+| `toobig` | 超过 `wvresp.max_save` |
 | `bodyerr` | `GetContentAsync()` 抛异常（典型是 302 重定向：`管道正在被关闭 (0x800700E8)`） |
 | `badfilter:<key>` | `-Y` 里出现了不认识的键 |
 
@@ -135,14 +135,14 @@ kpcap -u https://www.doubao.com/chat/ -Y "host=*.doubao.com" -Y "api/chat"
 
 ```powershell
 # 只看某个接口的 JSON，按字段取
-kpcap --hidden -u https://host/page -Y "ctype=json url=/api/" -e i,status,bytes,md5,url
+wvresp --hidden -u https://host/page -Y "ctype=json url=/api/" -e i,status,bytes,md5,url
 
 # 抓完做统计，看流量集中在哪些域
-kpcap -u https://host/page -a duration:20 -z -q
+wvresp -u https://host/page -a duration:20 -z -q
 
 # 收满 5 个 body 就停，并把原文全量导出到 obj\
-kpcap --hidden -u https://host/page --stop-kept 5 --export-objects http,obj
+wvresp --hidden -u https://host/page --stop-kept 5 --export-objects http,obj
 
 # 复用已登录的会话目录
-kpcap --hidden -u https://host/inbox -o kp.user_data=D:\kp\cap-profile -Y "ctype=json"
+wvresp --hidden -u https://host/inbox -o wvresp.user_data=D:\kp\cap-profile -Y "ctype=json"
 ```

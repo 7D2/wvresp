@@ -1,6 +1,6 @@
 # 要抓某个应用程序，怎么判断、怎么选定
 
-`kpcap` 只能抓 **WebView2 一侧**。所以面对一个程序，先判定它有没有这一侧，再决定抓不抓。按四步走，别跳过第 1 步。
+`wvresp` 只能抓 **WebView2 一侧**。所以面对一个程序，先判定它有没有这一侧，再决定抓不抓。按四步走，别跳过第 1 步。
 
 ## 第 1 步：它是不是网页壳
 
@@ -33,7 +33,7 @@ Get-CimInstance Win32_Process |
 
 ## 第 2 步：能不能复刻
 
-「复刻」= 用它页面里**同源**的 URL，在 `kpcap` 里导航一次，看响应是否同口径。
+「复刻」= 用它页面里**同源**的 URL，在 `wvresp` 里导航一次，看响应是否同口径。
 
 - 页面型目标（网页壳程序）：直接 `-u <页面地址>`。
 - 接口型目标：先用浏览器 DevTools 或本工具裸抓一次，找出真正返回数据的 URL（常见是 `*.json`、`/api/`）。
@@ -44,7 +44,7 @@ Get-CimInstance Win32_Process |
 有数据只有在登录后才出。做法是把 WebView2 的用户数据目录固定下来：
 
 ```powershell
-kpcap --hidden -u https://host/inbox -o kp.user_data=D:\kp\cap-profile -Y "ctype=json"
+wvresp --hidden -u https://host/inbox -o wvresp.user_data=D:\kp\cap-profile -Y "ctype=json"
 ```
 
 同一个 `user_data` 目录再次使用，cookie 就在。工具本身**不驱动登录流程**：登录由宿主正常完成，工具只复用会话（等价于 tshark 抓已经在跑的流量）。
@@ -56,7 +56,7 @@ kpcap --hidden -u https://host/inbox -o kp.user_data=D:\kp\cap-profile -Y "ctype
 | 结论 | 判据 | 下一步 |
 | --- | --- | --- |
 | **可复刻** | 进程树里有 `msedgewebview2`；同源 URL 能拿到同口径响应 | 直接抓，写进脚本 |
-| **需登录态** | 未登录抓到 401/跳登录页，复用 `user_data` 后正常 | 固定 `kp.user_data` 目录 |
+| **需登录态** | 未登录抓到 401/跳登录页，复用 `user_data` 后正常 | 固定 `wvresp.user_data` 目录 |
 | **不可用（非网页发起）** | 进程树里没有浏览器子进程；抓到的响应与目标无关 | 换工具：原生 TLS 只能走 tshark/pktmon/friTap 那一侧 |
 
 ## 常见坑

@@ -1,113 +1,121 @@
-# kpcap
+# wvresp
 
-Windows 上抓 **WebView2 的 HTTP(S) 明文响应**，命令行风格照 `tshark` / `pktmon`。
+**把网页的 HTTP(S) 响应正文原样存下来——不需要管理员权限。**
 
-**不需要管理员**，不装驱动，不注入进程，不读凭据，不装证书，不用 `SSLKEYLOGFILE`。
+wvresp 是一个 Windows 命令行小工具。你给它一个网址，它打开一个窗口把网页跑一遍，把每个响应（HTML、JSON、JS、图片……）的**明文正文**存成文件，再附一份 JSON 清单和日志。
 
-## 它抓的是什么
+它不装驱动，不改证书，不注入进程，不读凭据。跑它不需要管理员，退出后也不留系统级残留。
 
-宿主程序用 WebView2 打开网页时，TLS 在**宿主进程内**由 WebView2 自己完成。宿主可以直接拿到已经解密好的响应体：
+**名字**：`wvresp` = **W**e**V**iew **resp**onse，直白到不用解释——它拿的就是 WebView 的响应。
+
+**谁做的**：个人独立开发、MIT 开源，不隶属任何公司；不收集、不回传任何数据，代码能在这里全部读完。
+
+---
+
+## 它是怎么做到的
+
+一句话：**它站在"数据已经解开"的那一层。**
+
+网页壳程序（比如用微软 WebView2 做的客户端、Edge 的网页视图）打开网页时，TLS 由 WebView2 自己完成。宿主程序调一个官方接口拿到的，本来就是解密好的响应：
 
 ```csharp
-wv.CoreWebView2.WebResourceResponseReceived += ...
-// 回调里：
-e.Response.GetContentAsync()   // 已经是明文 body
+wv.CoreWebView2.WebResourceResponseReceived += (s, e) => {
+    // e.Response.StatusCode / Headers
+    // e.Response.GetContentAsync()  →  明文 body
+};
 ```
 
-`kpcap` 把这个窗口做成一条命令行：给 URL → 抓 → 过滤 → 落盘 → 清单 + 统计。
+wvresp 就是这样一个"宿主"：它自己开窗口、自己访问你给的网址、自己通过微软官方 API 取明文。所以：
 
-## 为什么不把另外几条路也做进来
+- 不需要网卡抓包权限（不走网卡）；
+- 不需要证书（不伪造、不替换、不写系统证书库）；
+- 不需要注入（数据本来就在自己进程里）；
+- 不需要 SSLKEYLOGFILE（没有要解密的密文）。
 
-两条理由：**别人已经做了**，而且**那些路都要抬权限**。
+原理上它取的是**自己这次访问的**内容，不是别人的流量。
 
-| 能力 | 现成工具 | 权限要求 | kpcap |
+---
+
+## 它能做什么
+
+| 能力 | 说明 |
+| --- | --- |
+| 顺序访问多个网址 | `-u` 可重复，按顺序打开，每次间隔 800 ms |
+| 过滤 | 按域名（`-f`，支持 `*` / `?` 通配）、按内容类型（`--type`）、按状态码/地址/大小（`-Y`）、按 body 字节数（`--min-bytes/--max-bytes`） |
+| 落盘 | `<输出目录>\bodies\` 下按 `序号_域名_文件名.扩展名` 存正文，扩展名按内容类型推 |
+| 清单 | `capture.jsonl`，每个响应一行，含未保存的（带 `reason` 说明为什么没存） |
+| 日志 | `wvresp.log`：导航成功/失败、取正文失败的报错、域名与内容类型统计 |
+| 统计 | `-z` 打印访问最多的域名（带已存字节数）与内容类型分布 |
+| 字段输出 | `-e i,status,url,bytes,md5,...` 逐行输出，方便管道处理；`-T table/json/fields/jsonl` 四种格式 |
+| 复用会话 | `-o wvresp.user_data=<目录>` 指到已有的用户数据目录，带上 cookie 再抓 |
+| 全量导出 | `--export-objects http,<目录>` 把每个正文都导出（不受单文件大小上限约束） |
+| 脚本化 | `--hidden` 不弹窗抢焦点；退出码 `0` 正常 / `2` 用法错误 / `4` 一个响应都没收到 |
+
+参数名刻意照着 `tshark` / `pktmon` 起（`-w/-c/-a/-i/-f/-Y/-o/-T/-e/-z/-q/-V`），如果你用过那两个，基本不用重新学。
+
+---
+
+## 它不能做什么
+
+这些都是**能力边界**，不是待修的 bug：
+
+1. **抓不到别的程序的流量。** 它只覆盖"自己窗口里发起的请求"。第三方程序的原生 TLS（Windows 自带的 Schannel、WinHTTP、自己写的 socket）它没有任何入口。
+2. **不做全机抓包，不产 pcap。** 那是 Wireshark / tshark / dumpcap / pktmon 的工作，请用它们。
+3. **不解密任意流量。** 没有密钥导出、没有证书替换、没有 TLS hook；它压根不解密，因为它拿到的已经是明文。
+4. **不注入、不提权、不读凭据、不写系统证书库。** 工具没有这些能力，也不打算加。
+5. **不绕过鉴权。** 登录态只能靠复用你自己的会话目录（等同于你已经登录过的窗口），工具不驱动登录流程、不尝试绕过任何登录或证书校验。
+6. **302 重定向的正文目前取不到**（报 `BODY-ERR ... 管道正在被关闭 (0x800700E8)`）；流式（SSE）响应的完整性未验证。
+7. **固定版 WebView2 运行时暂不支持**，只支持微软的常青版（Evergreen）。
+
+---
+
+## 对标产品
+
+同一个目的（"把通过网络传输的数据拿到手"），市面上的成熟工具走的是另外几条路：
+
+| 工具 | 它怎么拿数据 | 前提/权限 | wvresp 的差别 |
 | --- | --- | --- | --- |
-| 全机流量抓包 / pcap 解析 | Wireshark · tshark · dumpcap | 装 Npcap 驱动，通常要管理员 | 不做 |
-| 内核层抓包 | pktmon（Windows 内置） | 必须管理员 | 不做 |
-| 导出 TLS 密钥再解密 | tshark + `SSLKEYLOGFILE` | 要配合抓包驱动 | 不做 |
-| 注入进程捞密钥 | friTap · Frida | 附加进程要权限，且会被反调试检测 | 不做 |
-| 中间人证书解密 | mitmproxy · Fiddler | 装根证书（系统级要管理员） | 不做 |
-| 读凭据 / 密钥材料 | mimikatz 一类 | 管理员，且常被杀软拦 | 不做 |
+| Wireshark / tshark / dumpcap | 抓网卡，离线解析 pcap | 需装 Npcap 驱动，通常要管理员 | 不抓网卡，不产 pcap |
+| pktmon（Windows 自带） | 内核层抓包 | **必须管理员** | 不需要管理员 |
+| tshark + `SSLKEYLOGFILE` | 抓网卡 + 用浏览器导出的 TLS 密钥解密 | 需要抓包驱动配合 | 不解密，无密钥环节 |
+| mitmproxy / Fiddler | 中间人代理，签发证书解密 | 要装根证书，系统级要管理员 | 不碰证书，程序感知不到 |
+| friTap / Frida | 注入进程，hook TLS 库捞密钥 | 附加进程要权限，会被反调试检测 | 不注入 |
 
-这些都有成熟工具、也不缺这一份，而且全都要提权；再做一个只是重复造轮子。
-`kpcap` 只占那条没人占、又不用抬权的缝：**在本进程里，拿已经解密好的响应**。
+它们的定位是"**能抓这台机器上的一切**"。wvresp 的定位是"**只拿自己这一份、并且不提权**"。这两件事不冲突：需要全机流量就用上面那些，需要"某个网页壳程序里到底返回了什么"就用 wvresp。
 
-## 构建
+这一点是有意为之：这几条路都有成熟工具、也不缺这一份实现，而且全都要抬权限；再做一个只是重复造轮子。
 
-```powershell
-git clone <repo-url> kpcap
-cd kpcap
-.\build.ps1
-# 产物：src\bin\Release\netcoreapp3.1\kpcap.exe
-```
-
-依赖：.NET Core SDK 3.1（已验证 3.1.426）、NuGet 包 `Microsoft.Web.WebView2 1.0.1774.30`、本机 WebView2 运行时（Evergreen，已验证 157.0.4341.46）。
+---
 
 ## 快速开始
 
 ```powershell
-# 抓一个页面，8 秒后自动停
-kpcap -u https://example.com/ -w .\cap1 -a duration:8 -f example.com
+# 构建（需要 .NET Core SDK 3.1）
+.\build.ps1
+# 产物：src\bin\Release\netcoreapp3.1\wvresp.exe
 
-# 只留 JSON 接口，按字段逐行打印
-kpcap --hidden -u https://www.doubao.com/chat/ -Y ctype=json -e i,status,ctype,bytes,md5,url
+# 抓一个页面，8 秒后停，只留这个域名
+wvresp -u https://example.com/ -w .\cap1 -a duration:8 -f example.com
 
-# 收够 5 个真正落盘的 body 就停，并把 body 原样全量导出
-kpcap --hidden -u https://www.doubao.com/chat/ --stop-kept 5 --export-objects http,obj -q -z
+# 只要 JSON 接口，按字段逐行看
+wvresp --hidden -u https://example.com/api -Y "ctype=json status>=200" -e i,status,bytes,md5,url
+
+# 收满 5 个正文就停，并把正文全量导出
+wvresp --hidden -u https://example.com/api --stop-kept 5 --export-objects http,obj -q -z
 ```
 
-## 参数（速查）
+完整参数、字段名与输出格式见 [`docs/USAGE.md`](docs/USAGE.md)；"要抓某个程序该怎么判断"见 [`docs/TARGET.md`](docs/TARGET.md)；设计取舍见 [`docs/DESIGN.md`](docs/DESIGN.md)。
 
-| 参数 | 作用 |
-| --- | --- |
-| `-u, --url <URL>` | 起始 URL，可重复，按顺序导航（间隔 800 ms） |
-| `-w, --out <dir>` | 输出目录（默认 `.\kpcap-YYYYmmdd-HHmmss`） |
-| `-a duration:<sec>` | 到时自动停 |
-| `-c <n>` | 收够 N 个响应停（**过滤前计数**，同 tshark 语义） |
-| `--stop-kept <n>` | 收够 N 个**真正落盘**的 body 停 |
-| `-i, --iface <webview2\|any>` | 采集面，只接受 `webview2` / `any` |
-| `-f, --host <glob[,glob]>` | 按 host 采集期过滤（无通配符 = 子串） |
-| `--type <substr[,substr]>` | 按 Content-Type 子串过滤 |
-| `-Y <expr>` | 显示期过滤，空格分隔取 AND，支持 `host= url= ctype= status>=` |
-| `--min-bytes` / `--max-bytes` | body 长度门限 |
-| `-o http.user_agent=<s>` | 覆盖 UA |
-| `-o kp.user_data=<dir>` | 复用已有会话目录（cookie / 登录态） |
-| `-o kp.max_save=<bytes>` | 单个 body 落盘上限（默认 8 MiB） |
-| `-T table\|json\|fields\|jsonl` | 每响应输出格式 |
-| `-e <field[,field]>` | 选择字段（`i,status,url,ctype,bytes,md5,file,...`） |
-| `--manifest <name>` | 清单文件名（默认 `capture.jsonl`） |
-| `--export-objects http,<dir>` | 全量导出 body（忽略 `kp.max_save`） |
-| `-z` | 打印 host / content-type 统计 |
-| `-q` / `-V` | 静默 / 逐条打印 |
-| `--hidden` | 窗口不可见运行 |
-| `-h` / `--version` | 用法 / 版本 |
+---
 
-完整语义、字段名与长名兼容见 [`docs/USAGE.md`](docs/USAGE.md)；设计取舍见 [`docs/DESIGN.md`](docs/DESIGN.md)。
+## 关于隐私
 
-## 输出
+- 工具不联网回传任何东西；抓到的内容只写在你指定的输出目录里。
+- 只访问你在命令行里给出的网址，不内置任何站点、不内置登录、不内置上传。
+- 没有后台服务、没有开机自启、没有系统级安装；删掉目录就等于卸载干净。
 
-```
-<out>/
-  bodies/            0001_<host>_<basename>.<ext>   响应体，扩展名按 Content-Type 推
-  capture.jsonl      每个响应一行（kept=false 也记）
-  kpcap.log          nav 记录 / BODY-ERR / hosts / content-types 统计
-```
+---
 
-`capture.jsonl` 每行字段：`i t status method url host ctype bytes md5 file kept reason`。
-
-`reason` 取值 `host` / `type` / `filter` / `status` / `size` / `toobig` / `bodyerr` —— 排查「为什么没抓到」先看这一列。
-
-## 要抓某个应用程序，怎么判断
-
-四步判定链，见 [`docs/TARGET.md`](docs/TARGET.md)：查进程树有没有 `msedgewebview2` → 能不能用同源 URL 复刻 → 要不要复用登录态（`-o kp.user_data=`）→ 结论只给三种（可复刻 / 需登录态 / 不可用）。
-
-## 已知限制
-
-- 只覆盖**本进程 WebView2 发起**的那一侧。第三方程序的原生 TLS（Schannel / WinHTTP / 自研 socket）没有入口，这是采集面的物理边界，不是参数没开。
-- 302 重定向的响应体仍报 `BODY-ERR ... 管道正在被关闭 (0x800700E8)`，未规避。
-- SSE / 流式响应完整性未验证。
-- 固定版 WebView2 运行时（`browserExecutableFolder`）尚未暴露为参数，当前只支持 Evergreen。
-
-## License
+## 许可
 
 MIT，见 [`LICENSE`](LICENSE)。

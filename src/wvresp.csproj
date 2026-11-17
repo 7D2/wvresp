@@ -3,8 +3,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>kpcap</AssemblyName>
-    <RootNamespace>kpcap</RootNamespace>
+    <AssemblyName>wvresp</AssemblyName>
+    <RootNamespace>wvresp</RootNamespace>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
